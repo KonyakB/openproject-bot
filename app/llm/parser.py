@@ -65,22 +65,45 @@ class CreateRequestParser:
         if not cleaned:
             return None
 
-        if "," in cleaned:
-            tail = cleaned.split(",")[-1].strip()
-            if len(tail) >= 3:
-                return tail[:100].title()
+        lowered = cleaned.lower()
+        lowered = re.sub(r"\bin\s+[a-z0-9_-]+\s+project\b", "", lowered)
+        lowered = re.sub(r"\bproject\s+[a-z0-9_-]+\b", "", lowered)
 
         for prefix in [
             "create a new issue",
             "create issue",
+            "create a work package",
+            "create work package",
             "create task",
             "create",
             "add",
         ]:
-            if cleaned.lower().startswith(prefix):
-                cleaned = cleaned[len(prefix) :].strip(" ,")
+            if lowered.startswith(prefix):
+                lowered = lowered[len(prefix) :].strip(" ,")
                 break
 
-        words = cleaned.split()
+        lowered = re.sub(r"\b(a|an)\s+work\s+package\b", "", lowered)
+        lowered = re.sub(r"\bwork\s+package\b", "", lowered)
+        lowered = re.sub(r"\b(a|an)\s+issue\b", "", lowered)
+        lowered = re.sub(r"\bissue\b", "", lowered)
+        lowered = re.sub(r"\btask\b", "", lowered)
+
+        if " to " in lowered:
+            lowered = lowered.split(" to ", maxsplit=1)[1]
+
+        parts = [p.strip() for p in re.split(r",|\band\b", lowered) if p.strip()]
+        informative = []
+        for part in parts:
+            if any(token in part for token in ["assignee", "assign", "priority", "due date", "project"]):
+                continue
+            informative.append(part)
+
+        if informative:
+            lowered = informative[0]
+        elif parts:
+            lowered = parts[0]
+
+        lowered = re.sub(r"[^a-z0-9\s-]", "", lowered).strip()
+        words = lowered.split()
         subject = " ".join(words[:10]).strip()
         return subject[:100].title() if subject else None
