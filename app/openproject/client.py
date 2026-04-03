@@ -72,7 +72,12 @@ class OpenProjectClient:
         return self._request("GET", f"/api/v3/projects/{project_id}/work_packages/schemas/default{suffix}")
 
     def fetch_custom_fields(self) -> list[dict[str, Any]]:
-        data = self._request("GET", "/api/v3/custom_fields")
+        try:
+            data = self._request("GET", "/api/v3/custom_fields")
+        except OpenProjectError as exc:
+            if exc.code == "PROJECT_NOT_FOUND":
+                return []
+            raise
         return data.get("_embedded", {}).get("elements", [])
 
     def create_work_package(self, payload: CreateWorkPackagePayload) -> OpenProjectWorkPackageResult:
