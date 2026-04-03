@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     discord_public_key: str = Field(alias="DISCORD_PUBLIC_KEY")
     discord_application_id: str = Field(alias="DISCORD_APPLICATION_ID")
     discord_bot_token: str = Field(alias="DISCORD_BOT_TOKEN")
+    discord_guild_id: str | None = Field(default=None, alias="DISCORD_GUILD_ID")
 
     openproject_base_url: str = Field(alias="OPENPROJECT_BASE_URL")
     openproject_api_token: str = Field(alias="OPENPROJECT_API_TOKEN")

@@ -36,6 +36,7 @@ Required:
 - `DISCORD_PUBLIC_KEY`
 - `DISCORD_APPLICATION_ID`
 - `DISCORD_BOT_TOKEN`
+- `DISCORD_GUILD_ID` (recommended for instant command updates in a dev server)
 - `OPENPROJECT_BASE_URL`
 - `OPENPROJECT_API_TOKEN`
 - `LLM_API_KEY` (use a placeholder like `dummy` when using local Ollama without auth)
@@ -92,6 +93,9 @@ python scripts/sync_openproject_metadata.py
 ```bash
 python scripts/register_discord_commands.py
 ```
+
+Tip: set `DISCORD_GUILD_ID` in `.env` for immediate command propagation in that guild.
+Global command updates can take up to about an hour.
 
 5. Expose local endpoint for Discord with tunnel (ngrok/Cloudflare/Tailscale).
 
