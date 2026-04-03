@@ -1,3 +1,4 @@
+import base64
 from typing import Any
 
 import httpx
@@ -19,8 +20,9 @@ class OpenProjectClient:
         self.token = settings.openproject_api_token
 
     def _headers(self) -> dict[str, str]:
+        basic_token = base64.b64encode(f"apikey:{self.token}".encode("utf-8")).decode("utf-8")
         return {
-            "Authorization": f"Bearer {self.token}",
+            "Authorization": f"Basic {basic_token}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
