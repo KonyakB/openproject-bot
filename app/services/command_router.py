@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.discord.responses import interaction_message
+from app.openproject.metadata import MetadataRepository
 from app.services.create_issue import CreateIssueService
 
 
@@ -32,5 +33,12 @@ class CommandRouterService:
                 discord_username=discord_username,
                 request_text=request_text,
             )
+
+        if subcommand == "projects":
+            projects = MetadataRepository(self.db).load_projects()
+            if not projects:
+                return interaction_message("No projects are synced yet. Run metadata sync first.")
+            lines = [f"- {p.identifier} ({p.name})" for p in projects]
+            return interaction_message("Available projects:\n" + "\n".join(lines))
 
         return interaction_message("Unsupported /pm subcommand.")

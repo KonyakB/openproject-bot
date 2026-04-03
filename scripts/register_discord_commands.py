@@ -32,6 +32,11 @@ def main() -> None:
                 "name": "help",
                 "description": "Show usage",
             },
+            {
+                "type": 1,
+                "name": "projects",
+                "description": "List synced OpenProject projects",
+            },
         ],
     }
     with httpx.Client(timeout=30.0) as client:

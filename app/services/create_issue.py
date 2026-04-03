@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.models import PendingConfirmation
 from app.discord.responses import interaction_message, interaction_with_confirmation
 from app.llm.parser import CreateRequestParser
+from app.openproject.mapper import normalize_ref
 from app.openproject.client import OpenProjectClient
 from app.openproject.metadata import MetadataRepository
 from app.openproject.schemas import CreateWorkPackagePayload
@@ -33,6 +34,12 @@ class CreateIssueService:
             type_candidates=list({t.name for t in types}),
             custom_field_candidates=self._field_candidates(field_values),
         )
+
+        if not parsed.project_ref:
+            inferred_project = self._infer_project_from_text(request_text, projects)
+            if inferred_project:
+                parsed.project_ref = inferred_project
+                parsed.ambiguities.append("Project inferred from request text")
 
         validation = self.validator.validate(parsed, discord_username=discord_username)
         if not validation.ok or validation.resolved is None:
@@ -118,3 +125,19 @@ class CreateIssueService:
         for field in field_values:
             result.setdefault(field.field_name, []).append(field.value)
         return result
+
+    @staticmethod
+    def _infer_project_from_text(request_text: str, projects: list) -> str | None:
+        normalized_request = normalize_ref(request_text)
+        matches: list[str] = []
+        for project in projects:
+            candidates = [project.identifier, project.name, *project.aliases]
+            for candidate in candidates:
+                if not candidate:
+                    continue
+                if normalize_ref(candidate) and normalize_ref(candidate) in normalized_request:
+                    matches.append(project.identifier)
+                    break
+        if len(matches) == 1:
+            return matches[0]
+        return None

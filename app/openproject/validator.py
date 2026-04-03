@@ -14,19 +14,33 @@ class CreateActionValidator:
         confirmation_reasons: list[str] = []
 
         projects = self.metadata_repo.load_projects()
-        project_refs = [p.identifier for p in projects] + [p.name for p in projects]
-        project_match, project_was_fuzzy = match_value(parsed.project_ref or "", project_refs)
-        if not project_match:
-            errors.append("PROJECT_NOT_FOUND")
-            return ValidationResult(ok=False, errors=errors)
-        if project_was_fuzzy:
-            confirmation_reasons.append("Project resolution used fuzzy match")
+        if not projects:
+            return ValidationResult(ok=False, errors=["PROJECT_NOT_FOUND:No projects synced"])
 
-        project_meta = next(
-            p
-            for p in projects
-            if project_match in {p.identifier, p.name} or project_match in p.aliases
-        )
+        selected_project = None
+        project_was_fuzzy = False
+
+        if not parsed.project_ref and len(projects) == 1:
+            selected_project = projects[0]
+            confirmation_reasons.append("Project omitted; defaulted to only available project")
+
+        project_refs = [p.identifier for p in projects] + [p.name for p in projects]
+        if selected_project is None:
+            project_match, project_was_fuzzy = match_value(parsed.project_ref or "", project_refs)
+            if not project_match:
+                available = ", ".join(sorted({p.identifier for p in projects}))
+                errors.append(f"PROJECT_NOT_FOUND:Available projects are {available}")
+                return ValidationResult(ok=False, errors=errors)
+            if project_was_fuzzy:
+                confirmation_reasons.append("Project resolution used fuzzy match")
+
+            project_meta = next(
+                p
+                for p in projects
+                if project_match in {p.identifier, p.name} or project_match in p.aliases
+            )
+        else:
+            project_meta = selected_project
 
         types = [t for t in self.metadata_repo.load_types() if t.project_id == project_meta.id]
         if not types:
