@@ -39,7 +39,6 @@ class CreateIssueService:
             inferred_project = self._infer_project_from_text(request_text, projects)
             if inferred_project:
                 parsed.project_ref = inferred_project
-                parsed.ambiguities.append("Project inferred from request text")
 
         validation = self.validator.validate(parsed, discord_username=discord_username)
         if not validation.ok or validation.resolved is None:

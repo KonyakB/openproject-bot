@@ -86,11 +86,10 @@ class CreateActionValidator:
         if description:
             description = f"{description}\n\nRequested via Discord by {discord_username}."
 
-        needs_confirmation = (
-            parsed.confidence < self.settings.auto_create_confidence_threshold
-            or bool(parsed.ambiguities)
-            or bool(confirmation_reasons)
-        )
+        if parsed.confidence < self.settings.auto_create_confidence_threshold:
+            confirmation_reasons.append("Parser confidence below auto-create threshold")
+
+        needs_confirmation = bool(parsed.ambiguities) or bool(confirmation_reasons)
         confirmation_reasons.extend(parsed.ambiguities)
 
         return ValidationResult(
