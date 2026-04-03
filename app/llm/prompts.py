@@ -1,3 +1,6 @@
+from app.llm.examples import FEW_SHOT_EXAMPLES
+
+
 SYSTEM_PROMPT = """You are a strict parser for OpenProject work package creation.
 Output JSON only, no markdown.
 Rules:
@@ -6,6 +9,7 @@ Rules:
 - use null for unresolved fields
 - keep subject concise and action-oriented
 - include ambiguities when uncertain
+- use provided examples as style and schema guide
 """
 
 
@@ -17,8 +21,11 @@ def build_user_prompt(
 ) -> str:
     return (
         "Parse the following request into the schema.\n"
+        "Follow the examples exactly for structure and confidence behavior.\n"
         f"Request: {request}\n"
         f"Projects: {project_candidates}\n"
         f"Types: {type_candidates}\n"
         f"CustomFields: {custom_field_candidates}\n"
+        "Few-shot examples:\n"
+        f"{FEW_SHOT_EXAMPLES}\n"
     )
