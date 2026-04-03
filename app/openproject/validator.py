@@ -24,7 +24,22 @@ class CreateActionValidator:
             selected_project = projects[0]
             confirmation_reasons.append("Project omitted; defaulted to only available project")
 
-        project_refs = [p.identifier for p in projects] + [p.name for p in projects]
+        project_refs = sorted(
+            {
+                p.identifier
+                for p in projects
+            }
+            | {
+                p.name
+                for p in projects
+            }
+            | {
+                alias
+                for p in projects
+                for alias in p.aliases
+                if alias
+            }
+        )
         if selected_project is None:
             project_match, project_was_fuzzy = match_value(parsed.project_ref or "", project_refs)
             if not project_match:

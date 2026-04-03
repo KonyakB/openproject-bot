@@ -82,3 +82,32 @@ def test_validator_does_not_force_confirmation_on_confidence_only(db_session) ->
     assert result.ok is True
     assert result.resolved is not None
     assert result.resolved.needs_confirmation is False
+
+
+def test_validator_matches_project_aliases(db_session) -> None:
+    db_session.add(
+        ProjectMapping(
+            human_name="Demo Project",
+            openproject_project_id=5,
+            openproject_project_identifier="demo-project",
+            aliases_json=["demo-project", "demo", "demo project"],
+            active=True,
+        )
+    )
+    db_session.add(ProjectTypeMapping(project_id=5, openproject_type_id=1, name="Task", active=True))
+    db_session.commit()
+
+    parsed = ParsedCreateAction(
+        action="create_work_package",
+        project_ref="demo",
+        type_ref="Task",
+        subject="Design UMLs",
+        confidence=0.95,
+    )
+
+    validator = CreateActionValidator(MetadataRepository(db_session))
+    result = validator.validate(parsed, discord_username="alice")
+
+    assert result.ok is True
+    assert result.resolved is not None
+    assert result.resolved.project_id == 5

@@ -23,18 +23,19 @@ class MetadataSyncService:
                 select(ProjectMapping).where(ProjectMapping.openproject_project_id == project.id)
             )
             if row is None:
+                aliases = self._project_aliases(project.name, project.identifier)
                 row = ProjectMapping(
                     human_name=project.name,
                     openproject_project_id=project.id,
                     openproject_project_identifier=project.identifier or project.name.lower().replace(" ", "-"),
-                    aliases_json=[project.name, project.identifier or ""],
+                    aliases_json=aliases,
                     active=True,
                 )
                 self.db.add(row)
             else:
                 row.human_name = project.name
                 row.openproject_project_identifier = project.identifier or row.openproject_project_identifier
-                row.aliases_json = list({project.name, project.identifier or "", *row.aliases_json})
+                row.aliases_json = list({*row.aliases_json, *self._project_aliases(project.name, project.identifier)})
                 row.active = True
                 row.updated_at = datetime.now(UTC)
             project_count += 1
@@ -108,3 +109,27 @@ class MetadataSyncService:
 
         self.db.commit()
         return {"projects": project_count, "types": type_count, "field_values": field_count}
+
+    @staticmethod
+    def _project_aliases(name: str, identifier: str | None) -> list[str]:
+        values: set[str] = {name}
+        if identifier:
+            values.add(identifier)
+
+        normalized_name = name.lower().strip()
+        if normalized_name.endswith(" project"):
+            values.add(normalized_name.removesuffix(" project"))
+
+        for value in list(values):
+            v = value.strip().lower()
+            if not v:
+                continue
+            values.add(v)
+            values.add(v.replace("-", " "))
+            values.add(v.replace(" ", "-"))
+            if v.endswith("-project"):
+                values.add(v.removesuffix("-project"))
+            if v.endswith(" project"):
+                values.add(v.removesuffix(" project"))
+
+        return sorted(x for x in values if x)
