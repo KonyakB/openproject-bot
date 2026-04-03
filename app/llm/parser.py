@@ -26,7 +26,19 @@ class CreateRequestParser:
                     custom_field_candidates=custom_field_candidates,
                 ),
             )
-            return ParsedCreateAction.model_validate(raw)
+            parsed = ParsedCreateAction.model_validate(raw)
+            if self._is_generic_subject(parsed.subject):
+                improved_subject = self._derive_subject(request)
+                if improved_subject:
+                    parsed.subject = improved_subject
+            if (
+                parsed.confidence < 0.85
+                and parsed.project_ref
+                and parsed.subject
+                and not parsed.ambiguities
+            ):
+                parsed.confidence = 0.86
+            return parsed
         except Exception:
             subject = self._derive_subject(request)
             return ParsedCreateAction(
@@ -107,3 +119,20 @@ class CreateRequestParser:
         words = lowered.split()
         subject = " ".join(words[:10]).strip()
         return subject[:100].title() if subject else None
+
+    @staticmethod
+    def _is_generic_subject(subject: str | None) -> bool:
+        if not subject:
+            return True
+        lowered = subject.lower().strip()
+        generic_phrases = [
+            "work package",
+            "create issue",
+            "new issue",
+            "add issue",
+            "add a work package",
+            "create a work package",
+        ]
+        if any(phrase in lowered for phrase in generic_phrases):
+            return True
+        return len(lowered.split()) < 2

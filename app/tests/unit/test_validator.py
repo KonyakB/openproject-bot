@@ -52,3 +52,33 @@ def test_validator_resolves_basic_create(db_session) -> None:
     assert result.resolved.project_id == 42
     assert result.resolved.type_id == 7
     assert result.resolved.custom_fields["9"] == "electronics"
+
+
+def test_validator_does_not_force_confirmation_on_confidence_only(db_session) -> None:
+    db_session.add(
+        ProjectMapping(
+            human_name="Demo",
+            openproject_project_id=1,
+            openproject_project_identifier="demo",
+            aliases_json=["demo"],
+            active=True,
+        )
+    )
+    db_session.add(ProjectTypeMapping(project_id=1, openproject_type_id=1, name="Task", active=True))
+    db_session.commit()
+
+    parsed = ParsedCreateAction(
+        action="create_work_package",
+        project_ref="demo",
+        type_ref="Task",
+        subject="Design UMLs",
+        confidence=0.4,
+        ambiguities=[],
+    )
+
+    validator = CreateActionValidator(MetadataRepository(db_session))
+    result = validator.validate(parsed, discord_username="alice")
+
+    assert result.ok is True
+    assert result.resolved is not None
+    assert result.resolved.needs_confirmation is False
