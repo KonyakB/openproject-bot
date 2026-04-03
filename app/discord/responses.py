@@ -2,6 +2,15 @@ def interaction_pong() -> dict:
     return {"type": 1}
 
 
+def interaction_deferred_channel_message(ephemeral: bool = True) -> dict:
+    flags = 64 if ephemeral else 0
+    return {"type": 5, "data": {"flags": flags}}
+
+
+def interaction_deferred_update_message() -> dict:
+    return {"type": 6}
+
+
 def interaction_message(content: str, ephemeral: bool = True) -> dict:
     flags = 64 if ephemeral else 0
     return {"type": 4, "data": {"content": content, "flags": flags}}
